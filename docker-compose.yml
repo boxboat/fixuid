@@ -1,0 +1,14 @@
+version: "3.1"
+
+services:
+  alpine:
+    build: ./docker/alpine
+    image: "fixuid-alpine"
+
+  centos:
+    build: ./docker/centos
+    image: "fixuid-centos"
+
+  debian:
+    build: ./docker/debian
+    image: "fixuid-debian"

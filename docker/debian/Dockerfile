@@ -1,0 +1,12 @@
+FROM debian:latest
+
+RUN addgroup --gid 1000 docker && \
+    adduser --uid 1000 --ingroup docker --home /home/docker --shell /bin/sh --disabled-password --gecos "" docker
+
+COPY stage /
+RUN chmod u+s /usr/local/bin/fixuid && \
+    chown -R docker:docker /tmp/*
+
+USER docker:docker
+
+CMD ["/usr/local/bin/fixuid-test.sh"]
