@@ -1,5 +1,7 @@
 # fixuid
 
+[![Build Status](https://travis-ci.org/boxboat/fixuid.svg?branch=master)](https://travis-ci.org/boxboat/fixuid)
+
 A Go binary to detect current running UID/GID and adapt
 
 Primary use is in Docker so that container UID/GID matches host UID/GID when working with volumes mounted from host

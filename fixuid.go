@@ -15,10 +15,26 @@ import (
 	"github.com/go-ozzo/ozzo-config"
 )
 
+const ranFile = "/var/run/fixuid.ran"
+
 var logger = log.New(os.Stderr, "", 0)
 
 func main() {
 	logger.SetPrefix("fixuid: ")
+
+	// development warning
+	logger.Println("fixuid should only ever be used on development systems. DO NOT USE IN PRODUCTION")
+
+	// only run once on the system
+	if _, err := os.Stat(ranFile); !os.IsNotExist(err) {
+		logger.Println("fixuid is designed to run once and has already been run on this system. exiting")
+		os.Exit(0)
+	}
+
+	// check that script is running as root
+	if os.Geteuid() != 0 {
+		logger.Fatalln("fixuid must be owned by user 'root' and include the setuid bit 'chmod u+s /path/to/fixuid'")
+	}
 
 	// load config from /etc/fixuid/config.[json|toml|yaml|yml]
 	rootConfig := config.New()
@@ -98,7 +114,9 @@ func main() {
 	} else {
 		oldUID = ""
 		newUID = ""
-		if existingUser != containerUser {
+		if existingUser == containerUser {
+			logger.Println("runtime UID '" + runtimeUID + "' already matches container user '" + containerUser + "' UID")
+		} else {
 			logger.Println("runtime UID '" + runtimeUID + "' matches existing user '" + existingUser + "'; not changing UID")
 			needChown = true
 		}
@@ -117,7 +135,9 @@ func main() {
 	} else {
 		oldGID = ""
 		newGID = ""
-		if existingGroup != containerGroup {
+		if existingGroup == containerGroup {
+			logger.Println("runtime GID '" + runtimeGID + "' already matches container group '" + containerGroup + "' GID")
+		} else {
 			logger.Println("runtime GID '" + runtimeGID + "' matches existing group '" + existingGroup + "'; not changing GID")
 			needChown = true
 		}
@@ -182,6 +202,11 @@ func main() {
 		}
 
 		filepath.Walk("/", visit)
+	}
+
+	// mark the script as ran
+	if err := ioutil.WriteFile(ranFile, []byte{}, 0644); err != nil {
+		logger.Fatalln(err)
 	}
 
 	// all done

@@ -1,0 +1,21 @@
+language: go
+sudo: required
+dist: trusty
+go:
+  - 1.8
+
+branches:
+  only:
+    - master
+
+services:
+  - docker
+
+install:
+  - go get github.com/go-ozzo/ozzo-config
+
+script:
+  - ./test.sh
+
+notifications:
+  email: false

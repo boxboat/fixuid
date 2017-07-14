@@ -9,4 +9,4 @@ RUN chmod u+s /usr/local/bin/fixuid && \
 
 USER docker:docker
 
-CMD ["/usr/local/bin/fixuid-test.sh"]
+CMD ["/usr/local/bin/fixuid-test.sh", "docker", "docker"]
