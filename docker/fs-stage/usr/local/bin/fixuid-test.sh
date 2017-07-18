@@ -58,4 +58,5 @@ then
     rc=1
 fi
 
+>&2 echo "test complete, RC=$rc"
 exit $rc

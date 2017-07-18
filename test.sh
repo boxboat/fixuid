@@ -51,7 +51,6 @@ docker run --rm -u 0:0 --entrypoint fixuid fixuid-centos fixuid-test.sh root roo
 echo "\ndebian 0:0 entrypoint"
 docker run --rm -u 0:0 --entrypoint fixuid fixuid-debian fixuid-test.sh root root
 
-
 echo "\nalpine 0:1001 cmd"
 docker run --rm -u 0:1001 fixuid-alpine fixuid-test.sh root docker
 echo "\ncentos 0:1001 cmd"
@@ -78,9 +77,15 @@ docker run --rm -u 1001:0 --entrypoint fixuid fixuid-centos fixuid-test.sh docke
 echo "\ndebian 1001:0 entrypoint"
 docker run --rm -u 1001:0 --entrypoint fixuid fixuid-debian fixuid-test.sh docker root
 
-echo "\nalpine run twice"
-docker run --rm fixuid-alpine sh -c "fixuid && fixuid"
-echo "\ncentos run twice"
-docker run --rm fixuid-centos sh -c "fixuid && fixuid"
-echo "\ndebian run twice"
-docker run --rm fixuid-debian sh -c "fixuid && fixuid"
+echo "\nalpine run twice cmd"
+docker run --rm fixuid-alpine sh -c "fixuid-test.sh docker docker && fixuid fixuid-test.sh docker docker"
+echo "\ncentos run twice cmd"
+docker run --rm fixuid-centos sh -c "fixuid-test.sh docker docker && fixuid fixuid-test.sh docker docker"
+echo "\ndebian run twice cmd"
+docker run --rm fixuid-debian sh -c "fixuid-test.sh docker docker && fixuid fixuid-test.sh docker docker"
+echo "\nalpine run twice entrypoint"
+docker run --rm --entrypoint fixuid fixuid-alpine sh -c "fixuid-test.sh docker docker && fixuid fixuid-test.sh docker docker"
+echo "\ncentos run twice entrypoint"
+docker run --rm --entrypoint fixuid fixuid-centos sh -c "fixuid-test.sh docker docker && fixuid fixuid-test.sh docker docker"
+echo "\ndebian run twice entrypoint"
+docker run --rm --entrypoint fixuid fixuid-debian sh -c "fixuid-test.sh docker docker && fixuid fixuid-test.sh docker docker"
