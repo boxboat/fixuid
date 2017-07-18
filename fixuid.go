@@ -214,45 +214,48 @@ func main() {
 		logger.Fatalln(err)
 	}
 
+	// if the existing HOME directory is "/", change it to the user's home directory
+	existingHomeDir := os.Getenv("HOME")
+	if existingHomeDir == "/" {
+		homeDir, homeDirErr := findHomeDir(runtimeUID)
+		if homeDirErr == nil && homeDir != "" && homeDir != "/" {
+			if len(argsWithoutProg) > 0 {
+				os.Setenv("HOME", homeDir)
+			} else {
+				fmt.Println(`export HOME="` + strings.Replace(homeDir, `"`, `\"`, -1) + `"`)
+			}
+		}
+	}
+
 	// all done
 	exitOrExec(runtimeUIDInt, runtimeGIDInt, argsWithoutProg)
 }
 
-func exitOrExec(uid int, gid int, args []string) {
-	homeDir, homeDirErr := findHomeDir(strconv.Itoa(uid))
-
-	if len(args) == 0 {
-		// subprocess mode - print the new exported HOME dir to the shell if necessary and quit
-		if homeDirErr == nil && homeDir != "" && homeDir != os.Getenv("HOME") {
-			fmt.Println(`export HOME="` + strings.Replace(homeDir, `"`, `\"`, -1) + `"`)
-		}
-	} else {
-		// exec mode - de-escelate priveleges, fix HOME, and exec new process
-		binary, err := exec.LookPath(args[0])
+func exitOrExec(runtimeUIDInt int, runtimeGIDInt int, argsWithoutProg []string) {
+	if len(argsWithoutProg) > 0 {
+		// exec mode - de-escalate privileges and exec new process
+		binary, err := exec.LookPath(argsWithoutProg[0])
 		if err != nil {
 			logger.Fatalln(err)
 		}
 
-		// de-escelate the user back to the original
-		if err := syscall.Setreuid(uid, uid); err != nil {
+		// de-escalate the user back to the original
+		if err := syscall.Setreuid(runtimeUIDInt, runtimeUIDInt); err != nil {
 			logger.Fatalln(err)
 		}
-		// de-escelate the group back to the original
-		if err := syscall.Setregid(gid, gid); err != nil {
+		// de-escalate the group back to the original
+		if err := syscall.Setregid(runtimeGIDInt, runtimeGIDInt); err != nil {
 			logger.Fatalln(err)
 		}
-		// fix HOME
-		if homeDirErr == nil && homeDir != "" && homeDir != os.Getenv("HOME") {
-			os.Setenv("HOME", homeDir)
-		}
+
 		// exec new process
 		env := os.Environ()
-		if err := syscall.Exec(binary, args, env); err != nil {
+		if err := syscall.Exec(binary, argsWithoutProg, env); err != nil {
 			logger.Fatalln(err)
 		}
 	}
 
-	// catch-all exit statement
+	// nothing to exec; exit the program
 	os.Exit(0)
 }
 
