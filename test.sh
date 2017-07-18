@@ -12,40 +12,71 @@ rm -rf docker/debian/stage
 cp -r docker/fs-stage docker/debian/stage
 docker-compose build
 
-echo "\nalpine default user/group"
-docker run --rm fixuid-alpine
-echo "\ncentos default user/group"
-docker run --rm fixuid-centos
-echo "\ndebian default user/group"
-docker run --rm fixuid-debian
+echo "\nalpine default user/group cmd"
+docker run --rm fixuid-alpine fixuid-test.sh docker docker
+echo "\ncentos default user/group cmd"
+docker run --rm fixuid-centos fixuid-test.sh docker docker
+echo "\ndebian default user/group cmd"
+docker run --rm fixuid-debian fixuid-test.sh docker docker
+echo "\nalpine default user/group entrypoint"
+docker run --rm --entrypoint fixuid fixuid-alpine fixuid-test.sh docker docker
+echo "\ncentos default user/group entrypoint"
+docker run --rm --entrypoint fixuid fixuid-centos fixuid-test.sh docker docker
+echo "\ndebian default user/group entrypoint"
+docker run --rm --entrypoint fixuid fixuid-debian fixuid-test.sh docker docker
 
-echo "\nalpine 1001:1001"
-docker run --rm -u 1001:1001 fixuid-alpine
-echo "\ncentos 1001:1001"
-docker run --rm -u 1001:1001 fixuid-centos
-echo "\ndebian 1001:1001"
-docker run --rm -u 1001:1001 fixuid-debian
+echo "\nalpine 1001:1001 cmd"
+docker run --rm -u 1001:1001 fixuid-alpine fixuid-test.sh docker docker
+echo "\ncentos 1001:1001 cmd"
+docker run --rm -u 1001:1001 fixuid-centos fixuid-test.sh docker docker
+echo "\ndebian 1001:1001 cmd"
+docker run --rm -u 1001:1001 fixuid-debian fixuid-test.sh docker docker
+echo "\nalpine 1001:1001 entrypoint"
+docker run --rm -u 1001:1001 --entrypoint fixuid fixuid-alpine fixuid-test.sh docker docker
+echo "\ncentos 1001:1001 entrypoint"
+docker run --rm -u 1001:1001 --entrypoint fixuid fixuid-centos fixuid-test.sh docker docker
+echo "\ndebian 1001:1001 entrypoint"
+docker run --rm -u 1001:1001 --entrypoint fixuid fixuid-debian fixuid-test.sh docker docker
 
-echo "\nalpine 0:0"
+echo "\nalpine 0:0 cmd"
 docker run --rm -u 0:0 fixuid-alpine fixuid-test.sh root root
-echo "\ncentos 0:0"
+echo "\ncentos 0:0 cmd"
 docker run --rm -u 0:0 fixuid-centos fixuid-test.sh root root
-echo "\ndebian 0:0"
+echo "\ndebian 0:0 cmd"
 docker run --rm -u 0:0 fixuid-debian fixuid-test.sh root root
+echo "\nalpine 0:0 entrypoint"
+docker run --rm -u 0:0 --entrypoint fixuid fixuid-alpine fixuid-test.sh root root
+echo "\ncentos 0:0 entrypoint"
+docker run --rm -u 0:0 --entrypoint fixuid fixuid-centos fixuid-test.sh root root
+echo "\ndebian 0:0 entrypoint"
+docker run --rm -u 0:0 --entrypoint fixuid fixuid-debian fixuid-test.sh root root
 
-echo "\nalpine 0:1001"
+
+echo "\nalpine 0:1001 cmd"
 docker run --rm -u 0:1001 fixuid-alpine fixuid-test.sh root docker
-echo "\ncentos 0:1001"
+echo "\ncentos 0:1001 cmd"
 docker run --rm -u 0:1001 fixuid-centos fixuid-test.sh root docker
-echo "\ndebian 0:1001"
+echo "\ndebian 0:1001 cmd"
 docker run --rm -u 0:1001 fixuid-debian fixuid-test.sh root docker
+echo "\nalpine 0:1001 entrypoint"
+docker run --rm -u 0:1001 --entrypoint fixuid fixuid-alpine fixuid-test.sh root docker
+echo "\ncentos 0:1001 entrypoint"
+docker run --rm -u 0:1001 --entrypoint fixuid fixuid-centos fixuid-test.sh root docker
+echo "\ndebian 0:1001 entrypoint"
+docker run --rm -u 0:1001 --entrypoint fixuid fixuid-debian fixuid-test.sh root docker
 
-echo "\nalpine 1001:0"
+echo "\nalpine 1001:0 cmd"
 docker run --rm -u 1001:0 fixuid-alpine fixuid-test.sh docker root
-echo "\ncentos 1001:0"
+echo "\ncentos 1001:0 cmd"
 docker run --rm -u 1001:0 fixuid-centos fixuid-test.sh docker root
-echo "\ndebian 1001:0"
+echo "\ndebian 1001:0 cmd"
 docker run --rm -u 1001:0 fixuid-debian fixuid-test.sh docker root
+echo "\nalpine 1001:0 entrypoint"
+docker run --rm -u 1001:0 --entrypoint fixuid fixuid-alpine fixuid-test.sh docker root
+echo "\ncentos 1001:0 entrypoint"
+docker run --rm -u 1001:0 --entrypoint fixuid fixuid-centos fixuid-test.sh docker root
+echo "\ndebian 1001:0 entrypoint"
+docker run --rm -u 1001:0 --entrypoint fixuid fixuid-debian fixuid-test.sh docker root
 
 echo "\nalpine run twice"
 docker run --rm fixuid-alpine sh -c "fixuid && fixuid"

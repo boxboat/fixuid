@@ -3,11 +3,14 @@ package main
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -20,15 +23,23 @@ const ranFile = "/var/run/fixuid.ran"
 var logger = log.New(os.Stderr, "", 0)
 
 func main() {
+	runtime.GOMAXPROCS(1)
 	logger.SetPrefix("fixuid: ")
 
 	// development warning
 	logger.Println("fixuid should only ever be used on development systems. DO NOT USE IN PRODUCTION")
 
+	argsWithoutProg := os.Args[1:]
+	// detect what user we are running as
+	runtimeUIDInt := os.Getuid()
+	runtimeUID := strconv.Itoa(runtimeUIDInt)
+	runtimeGIDInt := os.Getgid()
+	runtimeGID := strconv.Itoa(runtimeGIDInt)
+
 	// only run once on the system
 	if _, err := os.Stat(ranFile); !os.IsNotExist(err) {
-		logger.Println("fixuid is designed to run once and has already been run on this system. exiting")
-		os.Exit(0)
+		logger.Println("already ran on this system; will not attempt to change UID/GID")
+		exitOrExec(runtimeUIDInt, runtimeGIDInt, argsWithoutProg)
 	}
 
 	// check that script is running as root
@@ -90,12 +101,6 @@ func main() {
 		logger.Fatal(err)
 	}
 	containerGIDUint32 := uint32(containerGIDInt)
-
-	// detect what user we are running as
-	runtimeUIDInt := os.Getuid()
-	runtimeUID := strconv.Itoa(runtimeUIDInt)
-	runtimeGIDInt := os.Getgid()
-	runtimeGID := strconv.Itoa(runtimeGIDInt)
 
 	// declare uid/gid vars and
 	var oldUID, newUID, oldGID, newGID string
@@ -210,6 +215,44 @@ func main() {
 	}
 
 	// all done
+	exitOrExec(runtimeUIDInt, runtimeGIDInt, argsWithoutProg)
+}
+
+func exitOrExec(uid int, gid int, args []string) {
+	homeDir, homeDirErr := findHomeDir(strconv.Itoa(uid))
+
+	if len(args) == 0 {
+		// subprocess mode - print the new exported HOME dir to the shell if necessary and quit
+		if homeDirErr == nil && homeDir != "" && homeDir != os.Getenv("HOME") {
+			fmt.Println(`export HOME="` + strings.Replace(homeDir, `"`, `\"`, -1) + `"`)
+		}
+	} else {
+		// exec mode - de-escelate priveleges, fix HOME, and exec new process
+		binary, err := exec.LookPath(args[0])
+		if err != nil {
+			logger.Fatalln(err)
+		}
+
+		// de-escelate the user back to the original
+		if err := syscall.Setreuid(uid, uid); err != nil {
+			logger.Fatalln(err)
+		}
+		// de-escelate the group back to the original
+		if err := syscall.Setregid(gid, gid); err != nil {
+			logger.Fatalln(err)
+		}
+		// fix HOME
+		if homeDirErr == nil && homeDir != "" && homeDir != os.Getenv("HOME") {
+			os.Setenv("HOME", homeDir)
+		}
+		// exec new process
+		env := os.Environ()
+		if err := syscall.Exec(binary, args, env); err != nil {
+			logger.Fatalln(err)
+		}
+	}
+
+	// catch-all exit statement
 	os.Exit(0)
 }
 
@@ -236,6 +279,10 @@ func findUID(user string) (string, error) {
 
 func findUser(uid string) (string, error) {
 	return searchColonDelimetedFile("/etc/passwd", uid, 2, 0)
+}
+
+func findHomeDir(uid string) (string, error) {
+	return searchColonDelimetedFile("/etc/passwd", uid, 2, 5)
 }
 
 func findGID(group string) (string, error) {

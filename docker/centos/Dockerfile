@@ -8,5 +8,3 @@ RUN chmod u+s /usr/local/bin/fixuid && \
     chown -R docker:docker /tmp/*
 
 USER docker:docker
-
-CMD ["/usr/local/bin/fixuid-test.sh", "docker", "docker"]

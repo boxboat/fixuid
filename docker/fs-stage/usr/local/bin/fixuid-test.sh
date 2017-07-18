@@ -3,9 +3,12 @@
 expected_user=$1
 expected_group=$2
 
-set -e
-fixuid
-set +e
+if [ ! -f /var/run/fixuid.ran ]
+then
+    set -e
+    eval $( fixuid )
+    set +e
+fi
 
 rc=0
 
@@ -41,5 +44,18 @@ do
     fi
 
 done
+
+if [ "$user" = "root" ]
+then
+    if [ "$HOME" != "/root" ]
+    then
+        >&2 echo "expected home directory: /root, actual home directory: $HOME"
+        rc=1
+    fi
+elif [ "$HOME" != "/home/$user" ]
+then
+    >&2 echo "expected home directory: /home/$user, actual home directory: $HOME"
+    rc=1
+fi
 
 exit $rc
