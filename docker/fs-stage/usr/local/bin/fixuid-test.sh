@@ -42,7 +42,6 @@ do
         >&2 echo "$file expected owning group: $expected_group, actual owning group: $file_group"
         rc=1
     fi
-
 done
 
 if [ "$user" = "root" ]
