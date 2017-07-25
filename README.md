@@ -2,9 +2,11 @@
 
 [![Build Status](https://travis-ci.org/boxboat/fixuid.svg?branch=master)](https://travis-ci.org/boxboat/fixuid)
 
-`fixuid` is a workaround to change a Docker container's user/group and file permissions that were set at build time to the UID/GID that the container was started with at runtime.  Primary use case is in development Docker containers when working with host mounted volumes.
+`fixuid` is a Go binary that changes a Docker container's user/group and file permissions that were set at build time to the UID/GID that the container was started with at runtime.  Primary use case is in development Docker containers when working with host mounted volumes.
 
 `fixuid` was born because there is currently no way to remap host volume UIDs/GIDs from the Docker Engine, [see moby issue 7198](https://github.com/moby/moby/issues/7198) for more details.
+
+Check out [BoxBoat's blog post](https://boxboat.com/2017/07/25/fixuid-change-docker-container-uid-gid/) for a practical explanation of how `fixuid` benefits development teams consisting of multiple developers.
 
 **fixuid should only be used in development Docker containers.  DO NOT INCLUDE in a production container image**
 
