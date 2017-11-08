@@ -190,7 +190,13 @@ func main() {
 
 			// prevent recursing into mounts - skip if it is not the same device as /
 			if sys.Dev != rootDev {
-				return filepath.SkipDir
+				if sys.Uid == containerUIDUint32 && sys.Gid == containerGIDUint32 {
+					logger.Println("skipping mounted path " + filePath)
+				}
+				if fileInfo.IsDir() {
+					return filepath.SkipDir
+				}
+				return nil
 			}
 
 			// only chown if file is containerUID:containerGID
