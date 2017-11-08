@@ -5,7 +5,7 @@ expected_gid=$2
 
 rc=0
 
-files="/home/docker/tmp/test-dir /home/docker/tmp/test-dir/test-file /home/docker/tmp/test-file"
+files="/home/docker/mnt-dir/test-dir /home/docker/mnt-dir/test-dir/test-file /home/docker/mnt-dir/test-file /home/docker/mnt-file"
 for file in $files
 do
     file_uid=$(stat -c "%u" $file)

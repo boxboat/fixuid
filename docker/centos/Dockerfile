@@ -8,3 +8,6 @@ RUN chmod u+s /usr/local/bin/fixuid && \
     chown -R docker:docker /tmp/*
 
 USER docker:docker
+
+RUN touch /home/docker/aaa && \
+    touch /home/docker/zzz
