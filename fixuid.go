@@ -102,6 +102,18 @@ func main() {
 	}
 	containerGIDUint32 := uint32(containerGIDInt)
 
+	// validate the paths from the config
+	var paths []string
+	err = rootConfig.Configure(&paths, "paths")
+	if err != nil {
+		switch err.(type) {
+		case *config.ConfigPathError:
+			paths = append(paths, "/")
+		default:
+			logger.Fatalln("key 'paths' is malformed; should be an array of strings in configuration file " + filePath)
+		}
+	}
+
 	// declare uid/gid vars and
 	var oldUID, newUID, oldGID, newGID string
 	needChown := false
@@ -167,29 +179,28 @@ func main() {
 	// search entire filesystem and chown containerUID:containerGID to runtimeUID:runtimeGID
 	if needChown {
 
-		// stat / to determine device
-		rootInfo, err := os.Stat("/")
-		if err != nil {
-			logger.Fatal(err)
-		}
-		sys, ok := rootInfo.Sys().(*syscall.Stat_t)
-		if !ok {
-			logger.Fatal("Cannot stat /")
-		}
-		rootDev := sys.Dev
+		var pathDev uint64
 
 		// this function is called for every file visited
 		visit := func(filePath string, fileInfo os.FileInfo, err error) error {
 
+			// an error to lstat or filepath.readDirNames
+			// see https://github.com/boxboat/fixuid/issues/4
+			if err != nil {
+				logger.Println("error when visiting " + filePath)
+				logger.Println(err)
+				return nil
+			}
+
 			// stat file to determine UID, GID, and device
 			sys, ok := fileInfo.Sys().(*syscall.Stat_t)
 			if !ok {
-				logger.Println("Cannot stat " + filePath)
+				logger.Println("cannot stat " + filePath)
 				return filepath.SkipDir
 			}
 
 			// prevent recursing into mounts - skip if it is not the same device as /
-			if sys.Dev != rootDev {
+			if sys.Dev != pathDev {
 				if sys.Uid == containerUIDUint32 && sys.Gid == containerGIDUint32 {
 					logger.Println("skipping mounted path " + filePath)
 				}
@@ -202,17 +213,35 @@ func main() {
 			// only chown if file is containerUID:containerGID
 			if sys.Uid == containerUIDUint32 && sys.Gid == containerGIDUint32 {
 				logger.Println("chown " + filePath)
-				chownError := syscall.Chown(filePath, runtimeUIDInt, runtimeGIDInt)
-				if chownError != nil {
+				err := syscall.Chown(filePath, runtimeUIDInt, runtimeGIDInt)
+				if err != nil {
 					logger.Println("error changing owner of " + filePath)
 					logger.Println(err)
 				}
-				return chownError
+				return nil
 			}
 			return nil
 		}
 
-		filepath.Walk("/", visit)
+		for _, path := range paths {
+			// stat the path to determine device
+			rootInfo, err := os.Stat(path)
+			if err != nil {
+				logger.Println("error accessing path: " + path)
+				logger.Println(err)
+				continue
+			}
+			sys, ok := rootInfo.Sys().(*syscall.Stat_t)
+			if !ok {
+				logger.Println("cannot stat " + path)
+				continue
+			}
+			pathDev = sys.Dev
+
+			logger.Println("recursively searching path " + path)
+			filepath.Walk(path, visit)
+		}
+
 	}
 
 	// mark the script as ran

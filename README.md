@@ -94,6 +94,28 @@ nginx:
     - ./www:/var/www
 ```
 
+## Specify Paths and Behavior across Devices
+
+The default behavior of `fixuid` is to start at the root path `/` and recursively scan each file and directory on the same devices as `/`.  In the configuration file `/etc/fixuid/config.yml`, you can specify specify the directories that should be recursively scanned:
+
+```yaml
+user: docker
+group: docker
+paths:
+  - /home/docker
+  - /tmp
+```
+
+`fixuid` will only recurse into a directory as long as it is on the same initial device specified in `paths` and will not recurse into directories mounted on other devices.  This includes Docker volumes.  If you want `fixuid` to run on the root Docker filesystem and a Docker volume at `/home/docker/.cache`, your configuration should include:
+
+```yaml
+user: docker
+group: docker
+paths:
+  - /
+  - /home/docker/.cache
+```
+
 ## Run in Startup Script instead of Entrypoint
 
 You can run `fixuid` as part of your container's startup script.  `fixuid` will `export HOME=/path/to/home` if $HOME is the default value of `/`, so be sure to evaluate the output of `fixuid` when running as a script.
