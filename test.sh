@@ -98,20 +98,20 @@ echo "\ndebian should not chown mount"
 docker run --rm -v $(pwd)/docker/fs-stage/tmp:/home/docker/mnt-dir -v $(pwd)/docker/fs-stage/tmp/test-file:/home/docker/mnt-file -u 1234:1234 fixuid-debian sh -c "fixuid-test.sh docker docker && fixuid-mount-test.sh $(id -u) $(id -g)"
 
 
-printf "\npaths:\n  - /\n  - /home/docker\n  - /does/not/exist" >> docker/alpine/stage/etc/fixuid/config.yml
-printf "\npaths:\n  - /\n  - /home/docker\n  - /does/not/exist" >> docker/centos/stage/etc/fixuid/config.yml
-printf "\npaths:\n  - /\n  - /home/docker\n  - /does/not/exist" >> docker/debian/stage/etc/fixuid/config.yml
+printf "\npaths:\n  - /\n  - /home/docker\n  - /tmp/space dir\n  - /does/not/exist" >> docker/alpine/stage/etc/fixuid/config.yml
+printf "\npaths:\n  - /\n  - /home/docker\n  - /tmp/space dir\n  - /does/not/exist" >> docker/centos/stage/etc/fixuid/config.yml
+printf "\npaths:\n  - /\n  - /home/docker\n  - /tmp/space dir\n  - /does/not/exist" >> docker/debian/stage/etc/fixuid/config.yml
 docker-compose build
 
 echo "\nalpine 1001:1001 cmd"
-docker run --rm -u 1001:1001 -v /home/docker fixuid-alpine fixuid-test.sh docker docker
+docker run --rm -u 1001:1001 -v /home/docker -v "/tmp/space dir" fixuid-alpine fixuid-test.sh docker docker
 echo "\ncentos 1001:1001 cmd"
-docker run --rm -u 1001:1001 -v /home/docker fixuid-centos fixuid-test.sh docker docker
+docker run --rm -u 1001:1001 -v /home/docker -v "/tmp/space dir" fixuid-centos fixuid-test.sh docker docker
 echo "\ndebian 1001:1001 cmd"
-docker run --rm -u 1001:1001 -v /home/docker fixuid-debian fixuid-test.sh docker docker
+docker run --rm -u 1001:1001 -v /home/docker -v "/tmp/space dir" fixuid-debian fixuid-test.sh docker docker
 echo "\nalpine 1001:1001 entrypoint"
-docker run --rm -u 1001:1001 -v /home/docker --entrypoint fixuid fixuid-alpine fixuid-test.sh docker docker
+docker run --rm -u 1001:1001 -v /home/docker -v "/tmp/space dir" --entrypoint fixuid fixuid-alpine fixuid-test.sh docker docker
 echo "\ncentos 1001:1001 entrypoint"
-docker run --rm -u 1001:1001 -v /home/docker --entrypoint fixuid fixuid-centos fixuid-test.sh docker docker
+docker run --rm -u 1001:1001 -v /home/docker -v "/tmp/space dir" --entrypoint fixuid fixuid-centos fixuid-test.sh docker docker
 echo "\ndebian 1001:1001 entrypoint"
-docker run --rm -u 1001:1001 -v /home/docker --entrypoint fixuid fixuid-debian fixuid-test.sh docker docker
+docker run --rm -u 1001:1001 -v /home/docker -v "/tmp/space dir" --entrypoint fixuid fixuid-debian fixuid-test.sh docker docker

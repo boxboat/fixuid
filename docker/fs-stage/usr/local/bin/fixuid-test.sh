@@ -27,7 +27,9 @@ then
     rc=1
 fi
 
-files="/tmp/test-dir /tmp/test-dir/test-file /tmp/test-file /home/docker /home/docker/aaa /home/docker/zzz"
+OLD_IFS="$IFS"
+IFS="|"
+files="/tmp/test-dir|/tmp/test-dir/test-file|/tmp/test-file|/home/docker|/home/docker/aaa|/home/docker/zzz|/tmp/space dir|/tmp/space dir/space file|/tmp/space file"
 for file in $files
 do
     file_user=$(stat -c "%U" $file)
@@ -44,6 +46,7 @@ do
         rc=1
     fi
 done
+IFS="$OLD_IFS"
 
 if [ "$user" = "root" ]
 then

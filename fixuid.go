@@ -179,7 +179,14 @@ func main() {
 	// search entire filesystem and chown containerUID:containerGID to runtimeUID:runtimeGID
 	if needChown {
 
-		var pathDev uint64
+		// proccess /proc/mounts
+		mounts, err := parseProcMounts()
+		if err != nil {
+			logger.Fatalln(err)
+		}
+
+		// store the current mountpoint
+		var mountpoint string
 
 		// this function is called for every file visited
 		visit := func(filePath string, fileInfo os.FileInfo, err error) error {
@@ -192,15 +199,15 @@ func main() {
 				return nil
 			}
 
-			// stat file to determine UID, GID, and device
+			// stat file to determine UID and GID
 			sys, ok := fileInfo.Sys().(*syscall.Stat_t)
 			if !ok {
 				logger.Println("cannot stat " + filePath)
 				return filepath.SkipDir
 			}
 
-			// prevent recursing into mounts - skip if it is not the same device as /
-			if sys.Dev != pathDev {
+			// prevent recursing into mounts
+			if findMountpoint(filePath, mounts) != mountpoint {
 				if sys.Uid == containerUIDUint32 && sys.Gid == containerGIDUint32 {
 					logger.Println("skipping mounted path " + filePath)
 				}
@@ -224,19 +231,14 @@ func main() {
 		}
 
 		for _, path := range paths {
-			// stat the path to determine device
-			rootInfo, err := os.Stat(path)
+			// stat the path to ensure it exists
+			_, err := os.Stat(path)
 			if err != nil {
 				logger.Println("error accessing path: " + path)
 				logger.Println(err)
 				continue
 			}
-			sys, ok := rootInfo.Sys().(*syscall.Stat_t)
-			if !ok {
-				logger.Println("cannot stat " + path)
-				continue
-			}
-			pathDev = sys.Dev
+			mountpoint = findMountpoint(path, mounts)
 
 			logger.Println("recursively searching path " + path)
 			filepath.Walk(path, visit)
@@ -390,4 +392,38 @@ func updateEtcGroup(group string, oldGID string, newGID string) error {
 	}
 
 	return nil
+}
+
+func parseProcMounts() (map[string]bool, error) {
+	// device mountpoint type options dump fsck
+	// spaces appear as \040
+	file, err := os.Open("/proc/mounts")
+	if err != nil {
+		return nil, err
+	}
+
+	mounts := make(map[string]bool)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		cols := strings.Fields(scanner.Text())
+		if len(cols) >= 2 {
+			mounts[filepath.Clean(strings.Replace(cols[1], "\\040", " ", -1))] = true
+		}
+	}
+	file.Close()
+
+	return mounts, nil
+}
+
+func findMountpoint(path string, mounts map[string]bool) string {
+	path = filepath.Clean(path)
+	var lastPath string
+	for path != lastPath {
+		if _, ok := mounts[path]; ok {
+			return path
+		}
+		lastPath = path
+		path = filepath.Dir(path)
+	}
+	return "/"
 }
