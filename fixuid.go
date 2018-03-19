@@ -44,7 +44,11 @@ func main() {
 
 	// check that script is running as root
 	if os.Geteuid() != 0 {
-		logger.Fatalln("fixuid must be owned by user 'root' and include the setuid bit 'chmod u+s /path/to/fixuid'")
+		logger.Fatalln(`fixuid is not running as root, ensure that the following criteria are met:
+        - fixuid binary is owned by root: 'chown root:root /path/to/fixuid'
+        - fixuid binary has the setuid bit: 'chmod u+s /path/to/fixuid'
+        - NoNewPrivileges is disabled in container security profile
+        - volume containing fixuid binary does not have the 'nosuid' mount option`)
 	}
 
 	// load config from /etc/fixuid/config.[json|toml|yaml|yml]
