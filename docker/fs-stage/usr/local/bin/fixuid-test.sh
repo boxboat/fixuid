@@ -6,7 +6,7 @@ expected_group=$2
 if [ ! -f /var/run/fixuid.ran ]
 then
     set -e
-    set_home=$( fixuid )
+    set_home=$( fixuid $FIXUID_FLAGS )
     set +e
     eval $set_home
 fi

@@ -129,3 +129,12 @@ eval $( fixuid )
 
 # UID/GID now match user/group, $HOME has been set to user's home directory
 ```
+
+## Command-Line Flags
+
+`fixuid` has the following command-line flags:
+
+```
+Usage of ./fixuid:
+  -q	quiet mode
+```

@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"errors"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -21,15 +22,17 @@ import (
 const ranFile = "/var/run/fixuid.ran"
 
 var logger = log.New(os.Stderr, "", 0)
+var quietFlag = flag.Bool("q", false, "quiet mode")
 
 func main() {
 	runtime.GOMAXPROCS(1)
 	logger.SetPrefix("fixuid: ")
+	flag.Parse()
 
 	// development warning
-	logger.Println("fixuid should only ever be used on development systems. DO NOT USE IN PRODUCTION")
+	logInfo("fixuid should only ever be used on development systems. DO NOT USE IN PRODUCTION")
 
-	argsWithoutProg := os.Args[1:]
+	argsWithoutProg := flag.Args()
 	// detect what user we are running as
 	runtimeUIDInt := os.Getuid()
 	runtimeUID := strconv.Itoa(runtimeUIDInt)
@@ -38,7 +41,7 @@ func main() {
 
 	// only run once on the system
 	if _, err := os.Stat(ranFile); !os.IsNotExist(err) {
-		logger.Println("already ran on this system; will not attempt to change UID/GID")
+		logInfo("already ran on this system; will not attempt to change UID/GID")
 		exitOrExec(runtimeUIDInt, runtimeGIDInt, argsWithoutProg)
 	}
 
@@ -60,7 +63,7 @@ func main() {
 		if _, err := os.Stat(filePath); !os.IsNotExist(err) {
 			configError = rootConfig.Load(filePath)
 			if configError != nil {
-				logger.Println("error when loading configuration file " + filePath)
+				logInfo("error when loading configuration file " + filePath)
 			} else {
 				break
 			}
@@ -128,7 +131,7 @@ func main() {
 		logger.Fatalln(existingUserError)
 	}
 	if existingUser == "" {
-		logger.Println("updating user '" + containerUser + "' to UID '" + runtimeUID)
+		logInfo("updating user '" + containerUser + "' to UID '" + runtimeUID)
 		needChown = true
 		oldUID = containerUID
 		newUID = runtimeUID
@@ -136,9 +139,9 @@ func main() {
 		oldUID = ""
 		newUID = ""
 		if existingUser == containerUser {
-			logger.Println("runtime UID '" + runtimeUID + "' already matches container user '" + containerUser + "' UID")
+			logInfo("runtime UID '" + runtimeUID + "' already matches container user '" + containerUser + "' UID")
 		} else {
-			logger.Println("runtime UID '" + runtimeUID + "' matches existing user '" + existingUser + "'; not changing UID")
+			logInfo("runtime UID '" + runtimeUID + "' matches existing user '" + existingUser + "'; not changing UID")
 			needChown = true
 		}
 	}
@@ -149,7 +152,7 @@ func main() {
 		logger.Fatalln(existingGroupError)
 	}
 	if existingGroup == "" {
-		logger.Println("updating group '" + containerGroup + "' to GID '" + runtimeGID)
+		logInfo("updating group '" + containerGroup + "' to GID '" + runtimeGID)
 		needChown = true
 		oldGID = containerGID
 		newGID = runtimeGID
@@ -157,9 +160,9 @@ func main() {
 		oldGID = ""
 		newGID = ""
 		if existingGroup == containerGroup {
-			logger.Println("runtime GID '" + runtimeGID + "' already matches container group '" + containerGroup + "' GID")
+			logInfo("runtime GID '" + runtimeGID + "' already matches container group '" + containerGroup + "' GID")
 		} else {
-			logger.Println("runtime GID '" + runtimeGID + "' matches existing group '" + existingGroup + "'; not changing GID")
+			logInfo("runtime GID '" + runtimeGID + "' matches existing group '" + existingGroup + "'; not changing GID")
 			needChown = true
 		}
 	}
@@ -198,22 +201,22 @@ func main() {
 			// an error to lstat or filepath.readDirNames
 			// see https://github.com/boxboat/fixuid/issues/4
 			if err != nil {
-				logger.Println("error when visiting " + filePath)
-				logger.Println(err)
+				logInfo("error when visiting " + filePath)
+				logInfo(err)
 				return nil
 			}
 
 			// stat file to determine UID and GID
 			sys, ok := fileInfo.Sys().(*syscall.Stat_t)
 			if !ok {
-				logger.Println("cannot stat " + filePath)
+				logInfo("cannot stat " + filePath)
 				return filepath.SkipDir
 			}
 
 			// prevent recursing into mounts
 			if findMountpoint(filePath, mounts) != mountpoint {
 				if sys.Uid == containerUIDUint32 && sys.Gid == containerGIDUint32 {
-					logger.Println("skipping mounted path " + filePath)
+					logInfo("skipping mounted path " + filePath)
 				}
 				if fileInfo.IsDir() {
 					return filepath.SkipDir
@@ -223,11 +226,11 @@ func main() {
 
 			// only chown if file is containerUID:containerGID
 			if sys.Uid == containerUIDUint32 && sys.Gid == containerGIDUint32 {
-				logger.Println("chown " + filePath)
+				logInfo("chown " + filePath)
 				err := syscall.Chown(filePath, runtimeUIDInt, runtimeGIDInt)
 				if err != nil {
-					logger.Println("error changing owner of " + filePath)
-					logger.Println(err)
+					logInfo("error changing owner of " + filePath)
+					logInfo(err)
 				}
 				return nil
 			}
@@ -238,13 +241,13 @@ func main() {
 			// stat the path to ensure it exists
 			_, err := os.Stat(path)
 			if err != nil {
-				logger.Println("error accessing path: " + path)
-				logger.Println(err)
+				logInfo("error accessing path: " + path)
+				logInfo(err)
 				continue
 			}
 			mountpoint = findMountpoint(path, mounts)
 
-			logger.Println("recursively searching path " + path)
+			logInfo("recursively searching path " + path)
 			filepath.Walk(path, visit)
 		}
 
@@ -270,6 +273,12 @@ func main() {
 
 	// all done
 	exitOrExec(runtimeUIDInt, runtimeGIDInt, argsWithoutProg)
+}
+
+func logInfo(v ...interface{}) {
+	if !*quietFlag {
+		logger.Println(v...)
+	}
 }
 
 func exitOrExec(runtimeUIDInt int, runtimeGIDInt int, argsWithoutProg []string) {

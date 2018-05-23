@@ -97,6 +97,18 @@ docker run --rm -v $(pwd)/docker/fs-stage/tmp:/home/docker/mnt-dir -v $(pwd)/doc
 echo "\ndebian should not chown mount"
 docker run --rm -v $(pwd)/docker/fs-stage/tmp:/home/docker/mnt-dir -v $(pwd)/docker/fs-stage/tmp/test-file:/home/docker/mnt-file -u 1234:1234 fixuid-debian sh -c "fixuid-test.sh docker docker && fixuid-mount-test.sh $(id -u) $(id -g)"
 
+echo "\nalpine quiet cmd"
+docker run --rm -e "FIXUID_FLAGS=-q" fixuid-alpine fixuid-test.sh docker docker
+echo "\ncentos quiet cmd"
+docker run --rm -e "FIXUID_FLAGS=-q" fixuid-centos fixuid-test.sh docker docker
+echo "\ndebian quiet cmd"
+docker run --rm -e "FIXUID_FLAGS=-q" fixuid-debian fixuid-test.sh docker docker
+echo "\nalpine quiet entrypoint"
+docker run --rm --entrypoint fixuid fixuid-alpine -q fixuid-test.sh docker docker
+echo "\ncentos quiet entrypoint"
+docker run --rm --entrypoint fixuid fixuid-centos -q fixuid-test.sh docker docker
+echo "\ndebian quiet entrypoint"
+docker run --rm --entrypoint fixuid fixuid-debian -q fixuid-test.sh docker docker
 
 printf "\npaths:\n  - /\n  - /home/docker\n  - /tmp/space dir\n  - /does/not/exist" >> docker/alpine/stage/etc/fixuid/config.yml
 printf "\npaths:\n  - /\n  - /home/docker\n  - /tmp/space dir\n  - /does/not/exist" >> docker/centos/stage/etc/fixuid/config.yml
