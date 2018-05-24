@@ -6,7 +6,7 @@ display_usage() {
 }
 
 # check whether user had supplied -h or --help . If yes display usage
-if [ $# = "--help" ] || [ $# = "-h" ]
+if [ $1 = "--help" ] || [ $1 = "-h" ]
 then
     display_usage
     exit 0
