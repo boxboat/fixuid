@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4](https://github.com/boxboat/fixuid/releases/tag/v0.4) - 2018-05-24
+
+### Features
+
+- Add quiet mode command-line flag `-q`: [#11](https://github.com/boxboat/fixuid/issues/11)
+
 ## [0.3](https://github.com/boxboat/fixuid/releases/tag/v0.3) - 2018-01-15
 
 ### Features
