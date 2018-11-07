@@ -2,7 +2,7 @@ language: go
 sudo: required
 dist: trusty
 go:
-  - 1.9
+  - 1.11
 
 branches:
   only:
@@ -10,9 +10,6 @@ branches:
 
 services:
   - docker
-
-install:
-  - go get github.com/go-ozzo/ozzo-config
 
 script:
   - docker info
