@@ -16,7 +16,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/go-ozzo/ozzo-config"
+	config "github.com/go-ozzo/ozzo-config"
 )
 
 const ranFile = "/var/run/fixuid.ran"
@@ -131,7 +131,7 @@ func main() {
 		logger.Fatalln(existingUserError)
 	}
 	if existingUser == "" {
-		logInfo("updating user '" + containerUser + "' to UID '" + runtimeUID)
+		logInfo("updating user '" + containerUser + "' to UID '" + runtimeUID + "'")
 		needChown = true
 		oldUID = containerUID
 		newUID = runtimeUID
@@ -152,7 +152,7 @@ func main() {
 		logger.Fatalln(existingGroupError)
 	}
 	if existingGroup == "" {
-		logInfo("updating group '" + containerGroup + "' to GID '" + runtimeGID)
+		logInfo("updating group '" + containerGroup + "' to GID '" + runtimeGID + "'")
 		needChown = true
 		oldGID = containerGID
 		newGID = runtimeGID
