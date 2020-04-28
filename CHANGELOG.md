@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.4.1](https://github.com/boxboat/fixuid/releases/tag/v0.4.1) - 2020-04-28
+
+### Features
+
+- Add linux arm64 release: [#23](https://github.com/boxboat/fixuid/pull/23)
+
 ## [0.4](https://github.com/boxboat/fixuid/releases/tag/v0.4) - 2018-05-24
 
 ### Features
