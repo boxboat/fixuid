@@ -19,13 +19,17 @@ then
     exit 1
 fi
 
-for GOARCH in amd64 arm64; do
-    ./build.sh
-    rm -f fixuid-*-linux-$GOARCH.tar.gz
-    perm="$(id -u):$(id -g)"
-    sudo chown root:root fixuid
-    sudo chmod u+s fixuid
-    tar -cvzf fixuid-$1-linux-$GOARCH.tar.gz fixuid
-    sudo chmod u-s fixuid
-    sudo chown $perm fixuid
+for GOOS in linux; do
+    for GOARCH in amd64 arm64; do
+        export GOOS="$GOOS"
+        export GOARCH="$GOARCH"
+        ./build.sh
+        rm -f fixuid-*-$GOOS-$GOARCH.tar.gz
+        perm="$(id -u):$(id -g)"
+        sudo chown root:root fixuid
+        sudo chmod u+s fixuid
+        tar -cvzf fixuid-$1-$GOOS-$GOARCH.tar.gz fixuid
+        sudo chmod u-s fixuid
+        sudo chown $perm fixuid
+    done
 done
