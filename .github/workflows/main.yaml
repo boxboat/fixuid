@@ -1,0 +1,58 @@
+name: Main
+on: [push, pull_request]
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Setup Go
+      uses: actions/setup-go@v2
+
+    - name: Print Go Version
+      run: go version
+
+    - name: Build
+      run: ./build.sh
+
+    - name: Test
+      run: ./test.sh
+
+    - name: Compute Tag
+      if: |
+        github.event_name == 'push'
+          && startsWith(github.event.ref, 'refs/tags/v')
+      id: compute_tag
+      run: |
+        tag=${GITHUB_REF#refs/tags/v}
+        if [ "$tag" != "$GITHUB_REF" ]; then
+          tag=$(echo "$tag" | sed -e 's/[^a-zA-Z0-9\-\.]/-/g')
+          echo ::set-output name=TAG::${tag}
+        else
+          echo "unable to determine tag" >&2
+          exit 1
+        fi
+
+    - name: Pack
+      if: |
+        github.event_name == 'push'
+          && startsWith(github.event.ref, 'refs/tags/v')
+      run: ./pack.sh "${{ steps.compute_tag.outputs.TAG }}"
+
+    - name: Create Release
+      if: |
+        github.event_name == 'push'
+          && startsWith(github.event.ref, 'refs/tags/v')
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        assets=()
+        for asset in fixuid-*-*-*.tar.gz; do
+          assets+=("-a" "$asset")
+        done
+        hub release create "${assets[@]}" \
+          -m "v${{ steps.compute_tag.outputs.TAG }}" \
+          "v${{ steps.compute_tag.outputs.TAG }}"
