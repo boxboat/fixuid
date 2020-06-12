@@ -227,7 +227,7 @@ func main() {
 			// only chown if file is containerUID:containerGID
 			if sys.Uid == containerUIDUint32 && sys.Gid == containerGIDUint32 {
 				logInfo("chown " + filePath)
-				err := syscall.Chown(filePath, runtimeUIDInt, runtimeGIDInt)
+				err := syscall.Lchown(filePath, runtimeUIDInt, runtimeGIDInt)
 				if err != nil {
 					logInfo("error changing owner of " + filePath)
 					logInfo(err)
