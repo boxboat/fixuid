@@ -20,7 +20,7 @@ then
 fi
 
 for GOOS in linux; do
-    for GOARCH in amd64 arm64; do
+    for GOARCH in amd64 arm64 ppc64le; do
         export GOOS="$GOOS"
         export GOARCH="$GOARCH"
         ./build.sh
