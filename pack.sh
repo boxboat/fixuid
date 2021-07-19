@@ -1,5 +1,5 @@
-#!/bin/sh
-cd $(dirname $0)
+#!/bin/sh -e
+cd "$(dirname "$0")"
 
 display_usage() {
     echo "Usage:\n$0 [version]"
@@ -20,16 +20,17 @@ then
 fi
 
 for GOOS in linux; do
-    for GOARCH in amd64 arm64 ppc64le; do
+    for GOARCH in amd64 arm64 mips64 mips64le ppc64 ppc64le riscv64; do
+        echo "packing $GOOS/$GOARCH" >&2
         export GOOS="$GOOS"
         export GOARCH="$GOARCH"
         ./build.sh
-        rm -f fixuid-*-$GOOS-$GOARCH.tar.gz
+        rm -f fixuid-*"-$GOOS-$GOARCH.tar.gz"
         perm="$(id -u):$(id -g)"
         sudo chown root:root fixuid
         sudo chmod u+s fixuid
-        tar -cvzf fixuid-$1-$GOOS-$GOARCH.tar.gz fixuid
+        tar -cvzf "fixuid-$1-$GOOS-$GOARCH.tar.gz" fixuid
         sudo chmod u-s fixuid
-        sudo chown $perm fixuid
+        sudo chown "$perm" fixuid
     done
 done
