@@ -4,6 +4,7 @@ github.com/go-ozzo/ozzo-config v0.0.0-20160627170238-0ff174cf5aa6 h1:T2JpXPk0mDD
 github.com/go-ozzo/ozzo-config v0.0.0-20160627170238-0ff174cf5aa6/go.mod h1:2RI3/USV7S8KzKNwmZtofbkg/BsCIAmeqJ5sJBWQ6T4=
 github.com/hnakamur/jsonpreprocess v0.0.0-20171017030034-a4e954386171 h1:G9nrYr376hLdDulCFOSmRiEa6X5vV6E/ANh+lQWmN4I=
 github.com/hnakamur/jsonpreprocess v0.0.0-20171017030034-a4e954386171/go.mod h1:ZSbf3Rg8HEW2bz6oeZBK8FbwS+g/s/KSrpZOx7CQSmw=
+gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v2 v2.2.1 h1:mUhvW9EsL+naU5Q3cakzfE91YhliOondGd6ZrsDBHQE=
 gopkg.in/yaml.v2 v2.2.1/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
