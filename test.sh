@@ -10,7 +10,7 @@ rm -rf docker/centos/stage
 cp -r docker/fs-stage docker/centos/stage
 rm -rf docker/debian/stage
 cp -r docker/fs-stage docker/debian/stage
-docker-compose build
+docker compose build
 
 echo "\nalpine default user/group cmd"
 docker run --rm fixuid-alpine fixuid-test.sh docker docker
@@ -36,7 +36,7 @@ docker run --rm -u 1001:1001 --entrypoint fixuid fixuid-alpine fixuid-test.sh do
 echo "\ncentos 1001:1001 entrypoint"
 docker run --rm -u 1001:1001 --entrypoint fixuid fixuid-centos fixuid-test.sh docker docker
 echo "\ndebian 1001:1001 entrypoint"
-docker run --rm -u 1001:1001 --entrypoint fixuid fixuid-debian fixuid-test.sh docker docker
+docker run --rm -u 1001:1001 --entrypoint fixuid fixuid-debian fixuid-test.sh docker docker "docker users"
 
 echo "\nalpine 0:0 cmd"
 docker run --rm -u 0:0 fixuid-alpine fixuid-test.sh root root
@@ -62,7 +62,7 @@ docker run --rm -u 0:1001 --entrypoint fixuid fixuid-alpine fixuid-test.sh root 
 echo "\ncentos 0:1001 entrypoint"
 docker run --rm -u 0:1001 --entrypoint fixuid fixuid-centos fixuid-test.sh root docker
 echo "\ndebian 0:1001 entrypoint"
-docker run --rm -u 0:1001 --entrypoint fixuid fixuid-debian fixuid-test.sh root docker
+docker run --rm -u 0:1001 --entrypoint fixuid fixuid-debian fixuid-test.sh root docker "docker users"
 
 echo "\nalpine 1001:0 cmd"
 docker run --rm -u 1001:0 fixuid-alpine fixuid-test.sh docker root
@@ -71,11 +71,11 @@ docker run --rm -u 1001:0 fixuid-centos fixuid-test.sh docker root
 echo "\ndebian 1001:0 cmd"
 docker run --rm -u 1001:0 fixuid-debian fixuid-test.sh docker root
 echo "\nalpine 1001:0 entrypoint"
-docker run --rm -u 1001:0 --entrypoint fixuid fixuid-alpine fixuid-test.sh docker root
+docker run --rm -u 1001:0 --entrypoint fixuid fixuid-alpine fixuid-test.sh docker root "root docker"
 echo "\ncentos 1001:0 entrypoint"
-docker run --rm -u 1001:0 --entrypoint fixuid fixuid-centos fixuid-test.sh docker root
+docker run --rm -u 1001:0 --entrypoint fixuid fixuid-centos fixuid-test.sh docker root "root docker"
 echo "\ndebian 1001:0 entrypoint"
-docker run --rm -u 1001:0 --entrypoint fixuid fixuid-debian fixuid-test.sh docker root
+docker run --rm -u 1001:0 --entrypoint fixuid fixuid-debian fixuid-test.sh docker root "root users docker"
 
 echo "\nalpine run twice cmd"
 docker run --rm fixuid-alpine sh -c "fixuid-test.sh docker docker && fixuid fixuid-test.sh docker docker"
@@ -113,7 +113,7 @@ docker run --rm --entrypoint fixuid fixuid-debian -q fixuid-test.sh docker docke
 printf "\npaths:\n  - /\n  - /home/docker\n  - /tmp/space dir\n  - /does/not/exist" >> docker/alpine/stage/etc/fixuid/config.yml
 printf "\npaths:\n  - /\n  - /home/docker\n  - /tmp/space dir\n  - /does/not/exist" >> docker/centos/stage/etc/fixuid/config.yml
 printf "\npaths:\n  - /\n  - /home/docker\n  - /tmp/space dir\n  - /does/not/exist" >> docker/debian/stage/etc/fixuid/config.yml
-docker-compose build
+docker compose build
 
 echo "\nalpine 1001:1001 cmd"
 docker run --rm -u 1001:1001 -v /home/docker -v "/tmp/space dir" fixuid-alpine fixuid-test.sh docker docker
@@ -126,4 +126,4 @@ docker run --rm -u 1001:1001 -v /home/docker -v "/tmp/space dir" --entrypoint fi
 echo "\ncentos 1001:1001 entrypoint"
 docker run --rm -u 1001:1001 -v /home/docker -v "/tmp/space dir" --entrypoint fixuid fixuid-centos fixuid-test.sh docker docker
 echo "\ndebian 1001:1001 entrypoint"
-docker run --rm -u 1001:1001 -v /home/docker -v "/tmp/space dir" --entrypoint fixuid fixuid-debian fixuid-test.sh docker docker
+docker run --rm -u 1001:1001 -v /home/docker -v "/tmp/space dir" --entrypoint fixuid fixuid-debian fixuid-test.sh docker docker "docker users"

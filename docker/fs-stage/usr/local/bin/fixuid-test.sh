@@ -1,7 +1,11 @@
 #!/bin/sh
 
-expected_user=$1
-expected_group=$2
+expected_user="$1"
+expected_group="$2"
+expected_groups="$3"
+if [ -z "$expected_groups" ]; then
+  expected_groups="$expected_group"
+fi
 
 if [ ! -f /var/run/fixuid.ran ]
 then
@@ -24,6 +28,13 @@ group=$(id -g -n)
 if [ "$group" != "$expected_group" ]
 then
     >&2 echo "expected group: $expected_group, actual group: $group"
+    rc=1
+fi
+
+groups=$(groups)
+if [ "$groups" != "$expected_groups" ]
+then
+    >&2 echo "expected groups: [$expected_groups], actual groups: [$groups]"
     rc=1
 fi
 

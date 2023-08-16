@@ -118,7 +118,7 @@ paths:
 
 ## Run in Startup Script instead of Entrypoint
 
-You can run `fixuid` as part of your container's startup script.  `fixuid` will `export HOME=/path/to/home` if $HOME is the default value of `/`, so be sure to evaluate the output of `fixuid` when running as a script.
+You can run `fixuid` as part of your container's startup script.  `fixuid` will `export HOME=/path/to/home` if $HOME is the default value of `/`, so be sure to evaluate the output of `fixuid` when running as a script.  Supplementary group membership changes on first-run will not work in this mode.
 
 ```
 #!/bin/sh
