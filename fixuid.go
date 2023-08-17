@@ -5,7 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"golang.org/x/exp/slices"
 	"log"
 	"os"
 	"os/exec"
@@ -42,7 +42,7 @@ func main() {
 	// only run once on the system
 	if _, err := os.Stat(ranFile); !os.IsNotExist(err) {
 		logInfo("already ran on this system; will not attempt to change UID/GID")
-		exitOrExec(runtimeUIDInt, runtimeGIDInt, argsWithoutProg)
+		exitOrExec(runtimeUID, runtimeUIDInt, runtimeGIDInt, -1, argsWithoutProg)
 	}
 
 	// check that script is running as root
@@ -78,6 +78,7 @@ func main() {
 	if containerUser == "" {
 		logger.Fatalln("cannot find key 'user' in configuration file " + filePath)
 	}
+
 	containerUID, containerUIDError := findUID(containerUser)
 	if containerUIDError != nil {
 		logger.Fatalln(containerUIDError)
@@ -146,7 +147,7 @@ func main() {
 		}
 	}
 
-	// deicide if need to change GIDs
+	// decide if need to change GIDs
 	existingGroup, existingGroupError := findGroup(runtimeGID)
 	if existingGroupError != nil {
 		logger.Fatalln(existingGroupError)
@@ -186,7 +187,7 @@ func main() {
 	// search entire filesystem and chown containerUID:containerGID to runtimeUID:runtimeGID
 	if needChown {
 
-		// proccess /proc/mounts
+		// process /proc/mounts
 		mounts, err := parseProcMounts()
 		if err != nil {
 			logger.Fatalln(err)
@@ -254,7 +255,7 @@ func main() {
 	}
 
 	// mark the script as ran
-	if err := ioutil.WriteFile(ranFile, []byte{}, 0644); err != nil {
+	if err := os.WriteFile(ranFile, []byte{}, 0644); err != nil {
 		logger.Fatalln(err)
 	}
 
@@ -271,8 +272,15 @@ func main() {
 		}
 	}
 
+	oldGIDInt := -1
+	if oldGID != "" && oldGID != newGID {
+		if gid, err := strconv.Atoi(oldGID); err != nil {
+			oldGIDInt = gid
+		}
+	}
+
 	// all done
-	exitOrExec(runtimeUIDInt, runtimeGIDInt, argsWithoutProg)
+	exitOrExec(runtimeUID, runtimeUIDInt, runtimeGIDInt, oldGIDInt, argsWithoutProg)
 }
 
 func logInfo(v ...interface{}) {
@@ -281,7 +289,8 @@ func logInfo(v ...interface{}) {
 	}
 }
 
-func exitOrExec(runtimeUIDInt int, runtimeGIDInt int, argsWithoutProg []string) {
+// oldGIDInt should be -1 if the GID was not changed
+func exitOrExec(runtimeUID string, runtimeUIDInt, runtimeGIDInt, oldGIDInt int, argsWithoutProg []string) {
 	if len(argsWithoutProg) > 0 {
 		// exec mode - de-escalate privileges and exec new process
 		binary, err := exec.LookPath(argsWithoutProg[0])
@@ -289,12 +298,64 @@ func exitOrExec(runtimeUIDInt int, runtimeGIDInt int, argsWithoutProg []string) 
 			logger.Fatalln(err)
 		}
 
-		// de-escalate the user back to the original
-		if err := syscall.Setreuid(runtimeUIDInt, runtimeUIDInt); err != nil {
+		// get real user
+		user, err := findUser(runtimeUID)
+		if err != nil {
 			logger.Fatalln(err)
 		}
+
+		// set groups
+		if user != "" {
+			// get all existing group IDs
+			existingGIDs, err := syscall.Getgroups()
+			if err != nil {
+				logger.Fatalln(err)
+			}
+
+			// get primary GID from /etc/passwd
+			primaryGID, err := findPrimaryGID(runtimeUID)
+			if err != nil {
+				logger.Fatalln(err)
+			}
+
+			// get supplementary GIDs from /etc/group
+			supplementaryGIDs, err := findUserSupplementaryGIDs(user)
+			if err != nil {
+				logger.Fatalln(err)
+			}
+
+			// add all GIDs to a map
+			allGIDs := append(existingGIDs, primaryGID)
+			allGIDs = append(allGIDs, supplementaryGIDs...)
+			gidMap := make(map[int]struct{})
+			for _, gid := range allGIDs {
+				gidMap[gid] = struct{}{}
+			}
+
+			// remove the old GID if it was changed
+			if oldGIDInt >= 0 {
+				delete(gidMap, oldGIDInt)
+			}
+
+			groups := make([]int, 0, len(gidMap))
+			for gid := range gidMap {
+				groups = append(groups, gid)
+			}
+
+			// set groups
+			err = syscall.Setgroups(groups)
+			if err != nil {
+				logger.Fatalln(err)
+			}
+		}
+
 		// de-escalate the group back to the original
-		if err := syscall.Setregid(runtimeGIDInt, runtimeGIDInt); err != nil {
+		if err := syscall.Setegid(runtimeGIDInt); err != nil {
+			logger.Fatalln(err)
+		}
+
+		// de-escalate the user back to the original
+		if err := syscall.Seteuid(runtimeUIDInt); err != nil {
 			logger.Fatalln(err)
 		}
 
@@ -309,7 +370,7 @@ func exitOrExec(runtimeUIDInt int, runtimeGIDInt int, argsWithoutProg []string) 
 	os.Exit(0)
 }
 
-func searchColonDelimetedFile(filePath string, search string, searchOffset int, returnOffset int) (string, error) {
+func searchColonDelimitedFile(filePath string, search string, searchOffset int, returnOffset int) (string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return "", err
@@ -319,6 +380,9 @@ func searchColonDelimetedFile(filePath string, search string, searchOffset int, 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		cols := strings.Split(scanner.Text(), ":")
+		if len(cols) < (searchOffset+1) || len(cols) < (returnOffset+1) {
+			continue
+		}
 		if cols[searchOffset] == search {
 			return cols[returnOffset], nil
 		}
@@ -327,23 +391,68 @@ func searchColonDelimetedFile(filePath string, search string, searchOffset int, 
 }
 
 func findUID(user string) (string, error) {
-	return searchColonDelimetedFile("/etc/passwd", user, 0, 2)
+	return searchColonDelimitedFile("/etc/passwd", user, 0, 2)
 }
 
 func findUser(uid string) (string, error) {
-	return searchColonDelimetedFile("/etc/passwd", uid, 2, 0)
+	return searchColonDelimitedFile("/etc/passwd", uid, 2, 0)
+}
+
+// returns -1 if not found
+func findPrimaryGID(uid string) (int, error) {
+	gid, err := searchColonDelimitedFile("/etc/passwd", uid, 2, 3)
+	if err != nil {
+		return -1, err
+	}
+	if gid == "" {
+		return -1, nil
+	}
+	return strconv.Atoi(gid)
 }
 
 func findHomeDir(uid string) (string, error) {
-	return searchColonDelimetedFile("/etc/passwd", uid, 2, 5)
+	return searchColonDelimitedFile("/etc/passwd", uid, 2, 5)
 }
 
 func findGID(group string) (string, error) {
-	return searchColonDelimetedFile("/etc/group", group, 0, 2)
+	return searchColonDelimitedFile("/etc/group", group, 0, 2)
 }
 
 func findGroup(gid string) (string, error) {
-	return searchColonDelimetedFile("/etc/group", gid, 2, 0)
+	return searchColonDelimitedFile("/etc/group", gid, 2, 0)
+}
+
+func findUserSupplementaryGIDs(user string) ([]int, error) {
+	// group:pass:gid:users
+	file, err := os.Open("/etc/group")
+	if err != nil {
+		return nil, err
+	}
+
+	var gids []int
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		cols := strings.Split(scanner.Text(), ":")
+		if len(cols) < 4 {
+			continue
+		}
+		users := strings.Split(cols[3], ",")
+		if !slices.Contains(users, user) {
+			continue
+		}
+		gid, err := strconv.Atoi(cols[2])
+		if err != nil {
+			continue
+		}
+		gids = append(gids, gid)
+	}
+	file.Close()
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return gids, nil
 }
 
 func updateEtcPasswd(user string, oldUID string, newUID string, oldGID string, newGID string) error {
@@ -357,6 +466,9 @@ func updateEtcPasswd(user string, oldUID string, newUID string, oldGID string, n
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		cols := strings.Split(scanner.Text(), ":")
+		if len(cols) < 4 {
+			continue
+		}
 		if oldUID != "" && newUID != "" && cols[0] == user && cols[2] == oldUID {
 			cols[2] = newUID
 		}
@@ -371,7 +483,7 @@ func updateEtcPasswd(user string, oldUID string, newUID string, oldGID string, n
 		return err
 	}
 
-	if err := ioutil.WriteFile("/etc/passwd", []byte(newLines), 0644); err != nil {
+	if err := os.WriteFile("/etc/passwd", []byte(newLines), 0644); err != nil {
 		return err
 	}
 
@@ -389,6 +501,9 @@ func updateEtcGroup(group string, oldGID string, newGID string) error {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		cols := strings.Split(scanner.Text(), ":")
+		if len(cols) < 3 {
+			continue
+		}
 		if oldGID != "" && newGID != "" && cols[0] == group && cols[2] == oldGID {
 			cols[2] = newGID
 		}
@@ -400,7 +515,7 @@ func updateEtcGroup(group string, oldGID string, newGID string) error {
 		return err
 	}
 
-	if err := ioutil.WriteFile("/etc/group", []byte(newLines), 0644); err != nil {
+	if err := os.WriteFile("/etc/group", []byte(newLines), 0644); err != nil {
 		return err
 	}
 
