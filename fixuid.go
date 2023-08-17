@@ -39,12 +39,6 @@ func main() {
 	runtimeGIDInt := os.Getgid()
 	runtimeGID := strconv.Itoa(runtimeGIDInt)
 
-	// only run once on the system
-	if _, err := os.Stat(ranFile); !os.IsNotExist(err) {
-		logInfo("already ran on this system; will not attempt to change UID/GID")
-		exitOrExec(runtimeUIDInt, runtimeGIDInt, argsWithoutProg)
-	}
-
 	// check that script is running as root
 	if os.Geteuid() != 0 {
 		logger.Fatalln(`fixuid is not running as root, ensure that the following criteria are met:
@@ -78,6 +72,13 @@ func main() {
 	if containerUser == "" {
 		logger.Fatalln("cannot find key 'user' in configuration file " + filePath)
 	}
+
+	// only run once on the system
+	if _, err := os.Stat(ranFile); !os.IsNotExist(err) {
+		logInfo("already ran on this system; will not attempt to change UID/GID")
+		exitOrExec(runtimeUIDInt, runtimeGIDInt, containerUser, "", "", argsWithoutProg)
+	}
+
 	containerUID, containerUIDError := findUID(containerUser)
 	if containerUIDError != nil {
 		logger.Fatalln(containerUIDError)
@@ -183,52 +184,6 @@ func main() {
 		}
 	}
 
-	// call syscall.Setgroups if necessary
-	if oldUID != newUID || oldGID != newGID {
-		// get all existing group IDs
-		existingGIDs, err := syscall.Getgroups()
-		if err != nil {
-			logger.Fatalln(err)
-		}
-
-		// get primary GID from /etc/passwd
-		primaryGID, err := findUserPrimaryGID(containerUser)
-		if err != nil {
-			logger.Fatalln(err)
-		}
-
-		// get supplementary GIDs from /etc/groups
-		supplementaryGIDs, err := findUserSupplementaryGIDs(containerUser)
-		if err != nil {
-			logger.Fatalln(err)
-		}
-
-		// add all GIDs to a map
-		allGIDs := append(existingGIDs, primaryGID)
-		allGIDs = append(allGIDs, supplementaryGIDs...)
-		gidMap := make(map[int]struct{})
-		for _, gid := range allGIDs {
-			gidMap[gid] = struct{}{}
-		}
-
-		// remove the old GID if it was changed
-		if oldGID != "" && newGID != "" && oldGID != newGID {
-			if gid, err := strconv.Atoi(oldGID); err == nil {
-				delete(gidMap, gid)
-			}
-		}
-
-		groups := make([]int, 0, len(gidMap))
-		for gid := range gidMap {
-			groups = append(groups, gid)
-		}
-
-		err = syscall.Setgroups(groups)
-		if err != nil {
-			logger.Fatalln(err)
-		}
-	}
-
 	// search entire filesystem and chown containerUID:containerGID to runtimeUID:runtimeGID
 	if needChown {
 
@@ -318,7 +273,7 @@ func main() {
 	}
 
 	// all done
-	exitOrExec(runtimeUIDInt, runtimeGIDInt, argsWithoutProg)
+	exitOrExec(runtimeUIDInt, runtimeGIDInt, containerUser, oldGID, newGID, argsWithoutProg)
 }
 
 func logInfo(v ...interface{}) {
@@ -327,7 +282,7 @@ func logInfo(v ...interface{}) {
 	}
 }
 
-func exitOrExec(runtimeUIDInt int, runtimeGIDInt int, argsWithoutProg []string) {
+func exitOrExec(runtimeUIDInt, runtimeGIDInt int, containerUser, oldGID, newGID string, argsWithoutProg []string) {
 	if len(argsWithoutProg) > 0 {
 		// exec mode - de-escalate privileges and exec new process
 		binary, err := exec.LookPath(argsWithoutProg[0])
@@ -335,13 +290,57 @@ func exitOrExec(runtimeUIDInt int, runtimeGIDInt int, argsWithoutProg []string) 
 			logger.Fatalln(err)
 		}
 
-		// de-escalate the user back to the original
-		if err := syscall.Seteuid(runtimeUIDInt); err != nil {
+		// get all existing group IDs
+		existingGIDs, err := syscall.Getgroups()
+		if err != nil {
+			logger.Fatalln(err)
+		}
+
+		// get primary GID from /etc/passwd
+		primaryGID, err := findUserPrimaryGID(containerUser)
+		if err != nil {
+			logger.Fatalln(err)
+		}
+
+		// get supplementary GIDs from /etc/group
+		supplementaryGIDs, err := findUserSupplementaryGIDs(containerUser)
+		if err != nil {
+			logger.Fatalln(err)
+		}
+
+		// add all GIDs to a map
+		allGIDs := append(existingGIDs, primaryGID)
+		allGIDs = append(allGIDs, supplementaryGIDs...)
+		gidMap := make(map[int]struct{})
+		for _, gid := range allGIDs {
+			gidMap[gid] = struct{}{}
+		}
+
+		// remove the old GID if it was changed
+		if oldGID != "" && newGID != "" && oldGID != newGID {
+			if gid, err := strconv.Atoi(oldGID); err == nil {
+				delete(gidMap, gid)
+			}
+		}
+
+		groups := make([]int, 0, len(gidMap))
+		for gid := range gidMap {
+			groups = append(groups, gid)
+		}
+
+		// set groups
+		err = syscall.Setgroups(groups)
+		if err != nil {
 			logger.Fatalln(err)
 		}
 
 		// de-escalate the group back to the original
 		if err := syscall.Setegid(runtimeGIDInt); err != nil {
+			logger.Fatalln(err)
+		}
+
+		// de-escalate the user back to the original
+		if err := syscall.Seteuid(runtimeUIDInt); err != nil {
 			logger.Fatalln(err)
 		}
 
