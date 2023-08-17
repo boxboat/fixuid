@@ -45,11 +45,11 @@ docker run --rm -u 0:0 fixuid-centos fixuid-test.sh root root
 echo "\ndebian 0:0 cmd"
 docker run --rm -u 0:0 fixuid-debian fixuid-test.sh root root
 echo "\nalpine 0:0 entrypoint"
-docker run --rm -u 0:0 --entrypoint fixuid fixuid-alpine fixuid-test.sh root root "root docker"
+docker run --rm -u 0:0 --entrypoint fixuid fixuid-alpine fixuid-test.sh root root "root bin daemon sys adm disk wheel floppy dialout tape video"
 echo "\ncentos 0:0 entrypoint"
-docker run --rm -u 0:0 --entrypoint fixuid fixuid-centos fixuid-test.sh root root "root docker"
+docker run --rm -u 0:0 --entrypoint fixuid fixuid-centos fixuid-test.sh root root
 echo "\ndebian 0:0 entrypoint"
-docker run --rm -u 0:0 --entrypoint fixuid fixuid-debian fixuid-test.sh root root "root users docker"
+docker run --rm -u 0:0 --entrypoint fixuid fixuid-debian fixuid-test.sh root root
 
 echo "\nalpine 0:1001 cmd"
 docker run --rm -u 0:1001 fixuid-alpine fixuid-test.sh root docker
@@ -58,11 +58,11 @@ docker run --rm -u 0:1001 fixuid-centos fixuid-test.sh root docker
 echo "\ndebian 0:1001 cmd"
 docker run --rm -u 0:1001 fixuid-debian fixuid-test.sh root docker
 echo "\nalpine 0:1001 entrypoint"
-docker run --rm -u 0:1001 --entrypoint fixuid fixuid-alpine fixuid-test.sh root docker
+docker run --rm -u 0:1001 --entrypoint fixuid fixuid-alpine fixuid-test.sh root docker "docker root bin daemon sys adm disk wheel floppy dialout tape video"
 echo "\ncentos 0:1001 entrypoint"
-docker run --rm -u 0:1001 --entrypoint fixuid fixuid-centos fixuid-test.sh root docker
+docker run --rm -u 0:1001 --entrypoint fixuid fixuid-centos fixuid-test.sh root docker "docker root"
 echo "\ndebian 0:1001 entrypoint"
-docker run --rm -u 0:1001 --entrypoint fixuid fixuid-debian fixuid-test.sh root docker "docker users"
+docker run --rm -u 0:1001 --entrypoint fixuid fixuid-debian fixuid-test.sh root docker "docker root"
 
 echo "\nalpine 1001:0 cmd"
 docker run --rm -u 1001:0 fixuid-alpine fixuid-test.sh docker root
