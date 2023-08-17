@@ -1,12 +1,16 @@
 # Changelog
 
+## [0.6.0](https://github.com/boxboat/fixuid/releases/tag/v0.6.0) - 2023-08-17
+
+### Features
+
+- Call `syscall.Setgroups` on groups from `/etc/passwd` and `/etc/group`: [#37](https://github.com/boxboat/fixuid/pull/37)
+
 ## [0.5.1](https://github.com/boxboat/fixuid/releases/tag/v0.5.1) - 2021-07-19
 
 ### Features
 
 - Add linux architectures `mips64` `mips64le` `ppc64` `ppc64le` and `riscv64`: [#33](https://github.com/boxboat/fixuid/pull/33), [#34](https://github.com/boxboat/fixuid/pull/34)
-
-# Changelog
 
 ## [0.5](https://github.com/boxboat/fixuid/releases/tag/v0.5) - 2020-06-12
 
