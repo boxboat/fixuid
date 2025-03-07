@@ -1,2 +1,3 @@
 /fs-stage/usr/local/bin/fixuid
+/fs-stage/usr/local/bin/test-no-escalate
 stage

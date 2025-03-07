@@ -2,14 +2,21 @@
 cd $(dirname $0)
 set -e
 
+# build fixuid
 ./build.sh
 mv fixuid docker/fs-stage/usr/local/bin
+
+# build test-no-escalate
+./test-no-escalate/build.sh
+mv test-no-escalate/test-no-escalate docker/fs-stage/usr/local/bin
+
 rm -rf docker/alpine/stage
 cp -r docker/fs-stage docker/alpine/stage
 rm -rf docker/centos/stage
 cp -r docker/fs-stage docker/centos/stage
 rm -rf docker/debian/stage
 cp -r docker/fs-stage docker/debian/stage
+
 docker compose build
 
 echo "\nalpine default user/group cmd"
@@ -109,6 +116,13 @@ echo "\ncentos quiet entrypoint"
 docker run --rm --entrypoint fixuid fixuid-centos -q fixuid-test.sh docker docker
 echo "\ndebian quiet entrypoint"
 docker run --rm --entrypoint fixuid fixuid-debian -q fixuid-test.sh docker docker 'docker users'
+
+echo "\nalpine test no escalate"
+docker run --rm --entrypoint fixuid fixuid-alpine test-no-escalate
+echo "\ncentos test no escalate"
+docker run --rm --entrypoint fixuid fixuid-centos test-no-escalate
+echo "\ndebian test no escalate"
+docker run --rm --entrypoint fixuid fixuid-debian test-no-escalate
 
 printf "\npaths:\n  - /\n  - /home/docker\n  - /tmp/space dir\n  - /does/not/exist" >> docker/alpine/stage/etc/fixuid/config.yml
 printf "\npaths:\n  - /\n  - /home/docker\n  - /tmp/space dir\n  - /does/not/exist" >> docker/centos/stage/etc/fixuid/config.yml
