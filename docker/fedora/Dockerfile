@@ -1,4 +1,4 @@
-FROM centos:latest
+FROM fedora:latest
 
 RUN groupadd -g 1000 docker && \
     useradd -u 1000 -g docker -d /home/docker -s /bin/sh docker

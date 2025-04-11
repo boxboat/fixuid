@@ -49,7 +49,7 @@ RUN addgroup -g 1000 docker && \
 RUN addgroup --gid 1000 docker && \
     adduser --uid 1000 --ingroup docker --home /home/docker --shell /bin/sh --disabled-password --gecos "" docker
 
-# centos / fedora
+# fedora
 RUN groupadd -g 1000 docker && \
     useradd -u 1000 -g docker -d /home/docker -s /bin/sh docker
 ```

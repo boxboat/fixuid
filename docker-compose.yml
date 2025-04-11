@@ -5,9 +5,9 @@ services:
     build: ./docker/alpine
     image: "fixuid-alpine"
 
-  centos:
-    build: ./docker/centos
-    image: "fixuid-centos"
+  fedora:
+    build: ./docker/fedora
+    image: "fixuid-fedora"
 
   debian:
     build: ./docker/debian
