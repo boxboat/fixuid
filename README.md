@@ -6,7 +6,7 @@
 
 `fixuid` was born because there is currently no way to remap host volume UIDs/GIDs from the Docker Engine, [see moby issue 7198](https://github.com/moby/moby/issues/7198) for more details.
 
-Check out [BoxBoat's blog post](https://boxboat.com/2017/07/25/fixuid-change-docker-container-uid-gid/) for a practical explanation of how `fixuid` benefits development teams consisting of multiple developers.
+Check out [BoxBoat's blog post](https://web.archive.org/web/20230530104308/https://boxboat.com/2017/07/25/fixuid-change-docker-container-uid-gid/) for a practical explanation of how `fixuid` benefits development teams consisting of multiple developers.
 
 **fixuid should only be used in development Docker containers.  DO NOT INCLUDE in a production container image**
 
